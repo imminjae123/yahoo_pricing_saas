@@ -1,0 +1,317 @@
+{% extends "base.html" %}
+{% block title %}ルール設定 — Yahoo! Pricing SaaS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- ── ページタイトル ────────────────────────────────────────── -->
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-bold text-gray-800">ルール設定</h1>
+    <div class="flex gap-2">
+      <button onclick="document.getElementById('simulate-modal').classList.remove('hidden')"
+              class="px-4 py-2 bg-teal-600 text-white text-sm rounded-lg hover:bg-teal-700 transition">
+        🧪 シミュレーション
+      </button>
+      <button onclick="document.getElementById('add-rule-modal').classList.remove('hidden')"
+              class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition">
+        + ルールを追加
+      </button>
+    </div>
+  </div>
+
+  <!-- ── ルール一覧 ─────────────────────────────────────────────── -->
+  <div id="rule-list"
+       hx-get="/ui/rules/list-partial"
+       hx-trigger="load"
+       hx-swap="innerHTML">
+    <div class="text-sm text-gray-400 text-center py-8">読み込み中…</div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     ルール追加モーダル
+════════════════════════════════════════════════════════════════ -->
+<div id="add-rule-modal"
+     class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-xl p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+    <div class="flex items-center justify-between">
+      <h2 class="text-lg font-bold text-gray-800">ルールを追加</h2>
+      <button onclick="document.getElementById('add-rule-modal').classList.add('hidden')"
+              class="text-gray-400 hover:text-gray-600 text-xl font-bold">×</button>
+    </div>
+
+    <form id="add-rule-form" class="space-y-4">
+      <div class="grid grid-cols-2 gap-3">
+        <div class="col-span-2">
+          <label class="block text-xs font-medium text-gray-600 mb-1">ルール名 <span class="text-red-500">*</span></label>
+          <input id="rule-name" required placeholder="例: 最安値より10円アンダー"
+                 class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none" />
+        </div>
+        <div class="col-span-2">
+          <label class="block text-xs font-medium text-gray-600 mb-1">対象商品（空白=全商品に適用）</label>
+          <select id="rule-product-id"
+                  class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none">
+            <option value="">全商品に適用</option>
+            {% for p in products %}
+            <option value="{{ p.id }}">{{ p.sku }} — {{ p.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <!-- ルールタイプ -->
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">ルールタイプ <span class="text-red-500">*</span></label>
+        <select id="rule-type" onchange="toggleRuleFields()"
+                class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none">
+          <option value="BEAT_LOWEST">BEAT_LOWEST — 最安値より安く設定</option>
+          <option value="MATCH_LOWEST">MATCH_LOWEST — 最安値に合わせる</option>
+          <option value="FIXED_PRICE">FIXED_PRICE — 固定価格</option>
+          <option value="PERCENTAGE_MARKUP">PERCENTAGE_MARKUP — 原価マークアップ</option>
+        </select>
+      </div>
+
+      <!-- アジャストメント (BEAT/FIXED/PERCENTAGE_MARKUP) -->
+      <div id="adj-section" class="grid grid-cols-2 gap-3">
+        <div id="adj-mode-section">
+          <label class="block text-xs font-medium text-gray-600 mb-1">調整モード</label>
+          <select id="rule-adj-mode"
+                  class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none">
+            <option value="FIXED">FIXED（円単位）</option>
+            <option value="PERCENTAGE">PERCENTAGE（%）</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">調整値 <span class="text-red-500">*</span></label>
+          <input id="rule-adj-value" type="number" step="any" placeholder="-10（円）or -0.02（%）"
+                 class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none" />
+        </div>
+      </div>
+
+      <!-- 制約 -->
+      <div class="grid grid-cols-3 gap-3 border-t border-gray-100 pt-3">
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">最低マージン (¥)</label>
+          <input id="rule-min-margin" type="number" min="0" placeholder="500"
+                 class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">マージン率 (0-1)</label>
+          <input id="rule-margin-rate" type="number" min="0" max="1" step="0.01" placeholder="0.15"
+                 class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">価格上限 (¥)</label>
+          <input id="rule-ceiling" type="number" min="0" placeholder="9800"
+                 class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none" />
+        </div>
+      </div>
+
+      <!-- スコープ + 優先度 -->
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">競合フィルター</label>
+          <select id="rule-scope"
+                  class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none">
+            <option value="ALL_MAPPED">ALL_MAPPED（全マッピング）</option>
+            <option value="PRIMARY_ONLY">PRIMARY_ONLY（主要競合のみ）</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">優先度（小=高）</label>
+          <input id="rule-priority" type="number" min="1" max="9999" value="100"
+                 class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none" />
+        </div>
+      </div>
+
+      <div class="flex gap-3 pt-2">
+        <button type="button" onclick="submitAddRule()"
+                class="flex-1 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition">
+          保存
+        </button>
+        <button type="button"
+                onclick="document.getElementById('add-rule-modal').classList.add('hidden')"
+                class="flex-1 py-2 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50 transition">
+          キャンセル
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     シミュレーションモーダル
+════════════════════════════════════════════════════════════════ -->
+<div id="simulate-modal"
+     class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 space-y-4">
+    <div class="flex items-center justify-between">
+      <h2 class="text-lg font-bold text-gray-800">🧪 価格シミュレーション</h2>
+      <button onclick="document.getElementById('simulate-modal').classList.add('hidden')"
+              class="text-gray-400 hover:text-gray-600 text-xl font-bold">×</button>
+    </div>
+
+    <div class="space-y-3">
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">競合価格リスト（カンマ区切り） <span class="text-red-500">*</span></label>
+        <input id="sim-prices" placeholder="例: 4500, 4800, 5000"
+               class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-400 focus:outline-none" />
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">原価 (¥) <span class="text-red-500">*</span></label>
+          <input id="sim-cost" type="number" placeholder="3000"
+                 class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-400 focus:outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">最低マージン (¥) <span class="text-red-500">*</span></label>
+          <input id="sim-margin" type="number" value="500"
+                 class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-400 focus:outline-none" />
+        </div>
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">ルールタイプ</label>
+        <select id="sim-type"
+                class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-400 focus:outline-none">
+          <option value="BEAT_LOWEST">BEAT_LOWEST</option>
+          <option value="MATCH_LOWEST">MATCH_LOWEST</option>
+          <option value="FIXED_PRICE">FIXED_PRICE</option>
+          <option value="PERCENTAGE_MARKUP">PERCENTAGE_MARKUP</option>
+        </select>
+      </div>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">調整モード</label>
+          <select id="sim-adj-mode"
+                  class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-400 focus:outline-none">
+            <option value="FIXED">FIXED</option>
+            <option value="PERCENTAGE">PERCENTAGE</option>
+          </select>
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">調整値</label>
+          <input id="sim-adj-value" type="number" step="any" value="-10"
+                 class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-teal-400 focus:outline-none" />
+        </div>
+      </div>
+    </div>
+
+    <button onclick="runSimulation()"
+            class="w-full py-2 bg-teal-600 text-white text-sm font-semibold rounded-lg hover:bg-teal-700 transition">
+      シミュレーション実行
+    </button>
+
+    <!-- 結果表示エリア -->
+    <div id="sim-result" class="hidden bg-teal-50 border border-teal-200 rounded-xl p-4 text-sm space-y-1"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function toggleRuleFields() {
+    const type = document.getElementById('rule-type').value;
+    const adjSection = document.getElementById('adj-section');
+    const adjModeSection = document.getElementById('adj-mode-section');
+    adjSection.classList.toggle('hidden', type === 'MATCH_LOWEST');
+    adjModeSection.classList.toggle('hidden', type === 'FIXED_PRICE' || type === 'PERCENTAGE_MARKUP');
+  }
+
+  async function submitAddRule() {
+    const name = document.getElementById('rule-name').value.trim();
+    const type = document.getElementById('rule-type').value;
+    const adjMode = document.getElementById('rule-adj-mode').value;
+    const adjVal = parseFloat(document.getElementById('rule-adj-value').value) || null;
+    const minMargin = parseFloat(document.getElementById('rule-min-margin').value) || null;
+    const marginRate = parseFloat(document.getElementById('rule-margin-rate').value) || null;
+    const ceiling = parseInt(document.getElementById('rule-ceiling').value) || null;
+    const scope = document.getElementById('rule-scope').value;
+    const priority = parseInt(document.getElementById('rule-priority').value) || 100;
+    const productId = document.getElementById('rule-product-id').value || null;
+
+    if (!name) { alert('ルール名を入力してください'); return; }
+    if (type !== 'MATCH_LOWEST' && adjVal === null) { alert('調整値を入力してください'); return; }
+
+    const body = {
+      name,
+      my_product_id: productId,
+      priority,
+      condition: {
+        type,
+        adjustment: { mode: type === 'MATCH_LOWEST' ? null : adjMode, value: adjVal },
+        constraints: { min_margin_amount: minMargin, min_margin_rate: marginRate, price_ceiling: ceiling },
+        scope: { competitor_filter: scope },
+      },
+    };
+
+    const res = await fetch('/api/v1/rules', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(body),
+    });
+
+    if (res.ok) {
+      document.getElementById('add-rule-modal').classList.add('hidden');
+      htmx.trigger('#rule-list', 'load');
+    } else {
+      const err = await res.json();
+      alert('エラー: ' + (err.detail || JSON.stringify(err)));
+    }
+  }
+
+  async function runSimulation() {
+    const pricesRaw = document.getElementById('sim-prices').value;
+    const prices = pricesRaw.split(',').map(s => parseInt(s.trim())).filter(n => !isNaN(n));
+    const cost = parseFloat(document.getElementById('sim-cost').value);
+    const margin = parseFloat(document.getElementById('sim-margin').value) || 0;
+    const type = document.getElementById('sim-type').value;
+    const adjMode = document.getElementById('sim-adj-mode').value;
+    const adjVal = parseFloat(document.getElementById('sim-adj-value').value) || 0;
+
+    if (prices.length === 0 || isNaN(cost)) {
+      alert('競合価格と原価を入力してください');
+      return;
+    }
+
+    const body = {
+      competitor_prices: prices,
+      cost,
+      min_margin_amount: margin,
+      condition: {
+        type,
+        adjustment: { mode: adjMode, value: adjVal },
+        constraints: { min_margin_amount: margin, min_margin_rate: null, price_ceiling: null },
+        scope: { competitor_filter: 'ALL_MAPPED' },
+      },
+    };
+
+    const res = await fetch('/api/v1/rules/simulate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(body),
+    });
+
+    const resultDiv = document.getElementById('sim-result');
+    resultDiv.classList.remove('hidden');
+
+    if (res.ok) {
+      const r = await res.json();
+      resultDiv.innerHTML = `
+        <p class="text-teal-700 font-bold text-lg">推奨価格: ¥${r.recommended_price.toLocaleString()}</p>
+        <p class="text-gray-600">参照競合価格: ¥${r.reference_price?.toLocaleString() ?? '—'}</p>
+        <p class="text-gray-600">調整前価格: ¥${r.raw_price.toLocaleString()}</p>
+        <p class="text-gray-600">防衛価格下限: ¥${r.defensive_floor.toLocaleString()}</p>
+        ${r.floor_applied ? '<p class="text-orange-600 text-xs">⚠ 防衛フロアが適用されました</p>' : ''}
+        ${r.ceiling_applied ? '<p class="text-orange-600 text-xs">⚠ 価格上限が適用されました</p>' : ''}
+        <p class="text-xs text-gray-400 mt-2">${r.explanation}</p>
+      `;
+    } else {
+      const err = await res.json();
+      resultDiv.innerHTML = `<p class="text-red-600">エラー: ${err.detail || JSON.stringify(err)}</p>`;
+    }
+  }
+</script>
+{% endblock %}

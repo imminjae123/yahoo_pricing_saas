@@ -10,7 +10,10 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.v1 import auth as auth_router
+from app.api.v1.dashboard import router as dashboard_router
 from app.api.v1.products import competitor_router, router as products_router
+from app.api.v1.rules import router as rules_router
+from app.api.v1.ui import router as ui_router
 from app.config import settings
 from app.dependencies.db import engine
 from app.models import Base
@@ -64,6 +67,9 @@ app.add_middleware(
 app.include_router(auth_router.router, prefix="/api/v1/auth", tags=["auth"])
 app.include_router(products_router, prefix="/api/v1/products", tags=["products"])
 app.include_router(competitor_router, prefix="/api/v1/competitors", tags=["competitors"])
+app.include_router(rules_router, prefix="/api/v1/rules", tags=["rules"])
+app.include_router(dashboard_router, prefix="/api/v1/dashboard", tags=["dashboard"])
+app.include_router(ui_router, prefix="/ui", tags=["ui"])
 
 
 @app.get("/health", tags=["health"])

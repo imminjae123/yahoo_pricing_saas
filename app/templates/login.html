@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ログイン — Yahoo! Pricing SaaS</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center">
+  <div class="bg-white rounded-2xl shadow-lg w-full max-w-sm p-8 space-y-6">
+    <div class="text-center">
+      <p class="text-3xl mb-2">📊</p>
+      <h1 class="text-xl font-bold text-gray-800">Yahoo! Pricing SaaS</h1>
+      <p class="text-sm text-gray-500 mt-1">ログインしてください</p>
+    </div>
+
+    <div id="error-msg" class="hidden bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-2 rounded-lg"></div>
+
+    <form id="login-form" class="space-y-4">
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">メールアドレス</label>
+        <input id="email" type="email" required autocomplete="email"
+               class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none" />
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">パスワード</label>
+        <input id="password" type="password" required autocomplete="current-password"
+               class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none" />
+      </div>
+      <button type="submit"
+              class="w-full py-2.5 bg-blue-600 text-white font-semibold text-sm rounded-lg hover:bg-blue-700 transition">
+        ログイン
+      </button>
+    </form>
+
+    <p class="text-center text-xs text-gray-400">
+      アカウントがない場合は <a href="/api/docs#/auth/register_api_v1_auth_register_post" class="text-blue-500 hover:underline">API から登録</a>
+    </p>
+  </div>
+
+  <script>
+    document.getElementById('login-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      const errDiv = document.getElementById('error-msg');
+
+      const res = await fetch('/api/v1/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (res.ok) {
+          // Cookie is set server-side (httpOnly) — just redirect.
+          window.location.href = '/ui/dashboard';
+        } else {
+        const err = await res.json();
+        errDiv.textContent = err.detail || 'ログインに失敗しました';
+        errDiv.classList.remove('hidden');
+      }
+    });
+  </script>
+</body>
+</html>

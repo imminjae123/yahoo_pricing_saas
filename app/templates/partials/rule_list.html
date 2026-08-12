@@ -1,0 +1,52 @@
+{% if rules %}
+<div class="space-y-3">
+  {% for r in rules %}
+  <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 flex items-start gap-4"
+       id="rule-item-{{ r.id }}">
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center gap-2 flex-wrap">
+        <span class="font-semibold text-gray-800">{{ r.name }}</span>
+        <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+          {{ r.condition.get('type', '—') }}
+        </span>
+        <span class="px-2 py-0.5 rounded-full text-xs font-semibold
+          {% if r.is_active %}bg-green-100 text-green-700{% else %}bg-gray-100 text-gray-400{% endif %}">
+          {% if r.is_active %}有効{% else %}無効{% endif %}
+        </span>
+        <span class="text-xs text-gray-400">優先度: {{ r.priority }}</span>
+      </div>
+      {% if r.description %}
+      <p class="text-xs text-gray-500 mt-1">{{ r.description }}</p>
+      {% endif %}
+      <p class="text-xs text-gray-400 mt-1 font-mono">
+        {{ r.condition | tojson(ensure_ascii=False) | truncate(120) }}
+      </p>
+    </div>
+    <div class="flex gap-2 flex-shrink-0 text-xs">
+      <button
+        hx-patch="/api/v1/rules/{{ r.id }}"
+        hx-vals='{"is_active": {{ "false" if r.is_active else "true" }} }'
+        hx-target="#rule-item-{{ r.id }}"
+        hx-swap="outerHTML"
+        class="px-3 py-1.5 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition">
+        {% if r.is_active %}無効化{% else %}有効化{% endif %}
+      </button>
+      <button
+        hx-delete="/api/v1/rules/{{ r.id }}"
+        hx-target="#rule-item-{{ r.id }}"
+        hx-swap="outerHTML swap:0.3s"
+        hx-confirm="このルールを削除（無効化）しますか？"
+        class="px-3 py-1.5 border border-red-200 text-red-500 rounded-lg hover:bg-red-50 transition">
+        削除
+      </button>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-12 text-gray-400">
+  <p class="text-4xl mb-3">⚙️</p>
+  <p class="text-sm">ルールがまだ登録されていません</p>
+  <p class="text-xs mt-1">「ルールを追加」ボタンから登録してください</p>
+</div>
+{% endif %}

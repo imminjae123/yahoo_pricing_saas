@@ -1,0 +1,9 @@
+<canvas id="priceChartCanvas" class="w-full h-full"></canvas>
+<script>
+  // chart-container 部分更新時に使うデータ
+  window.__CHART_DATA__ = {{ series_json | safe }};
+  // HTMX afterSwap でレンダリングされる（dashboard.html の script を参照）
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    if (window.renderPriceChart) renderPriceChart(window.__CHART_DATA__);
+  }
+</script>

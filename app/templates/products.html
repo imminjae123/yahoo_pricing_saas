@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% block title %}商品管理 — Yahoo! Pricing SaaS{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+  <!-- ── ページタイトル ────────────────────────────────────────── -->
+  <div class="flex items-center justify-between">
+    <h1 class="text-2xl font-bold text-gray-800">商品管理</h1>
+    <button onclick="document.getElementById('add-product-modal').classList.remove('hidden')"
+            class="px-4 py-2 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition">
+      + 自社商品を追加
+    </button>
+  </div>
+
+  <!-- ── タブ ──────────────────────────────────────────────────── -->
+  <div class="flex gap-1 border-b border-gray-200">
+    <button onclick="switchTab('my-products')"
+            id="tab-my"
+            class="px-4 py-2 text-sm font-medium border-b-2 border-blue-600 text-blue-600 -mb-px">
+      自社商品
+    </button>
+    <button onclick="switchTab('competitors')"
+            id="tab-comp"
+            class="px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent -mb-px">
+      競合商品
+    </button>
+  </div>
+
+  <!-- ── 自社商品タブ ───────────────────────────────────────────── -->
+  <div id="tab-my-products" class="space-y-4">
+
+    <!-- リアルタイム検索 (HTMX) -->
+    <div class="flex gap-3 items-center">
+      <input type="search"
+             name="q"
+             placeholder="SKU・商品名で検索…"
+             class="w-72 text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none"
+             hx-get="/ui/products/search"
+             hx-trigger="keyup changed delay:300ms"
+             hx-target="#product-list"
+             hx-swap="innerHTML"
+             hx-indicator="#search-spinner" />
+      <span id="search-spinner" class="htmx-indicator text-blue-500 text-xs">検索中…</span>
+    </div>
+
+    <!-- 商品一覧テーブル -->
+    <div id="product-list">
+      {% include "partials/product_list.html" %}
+    </div>
+  </div>
+
+  <!-- ── 競合商品タブ ───────────────────────────────────────────── -->
+  <div id="tab-competitors" class="hidden space-y-4">
+    <div class="flex items-center justify-between">
+      <p class="text-sm text-gray-500">登録済み競合商品の一覧です。</p>
+      <button onclick="document.getElementById('add-competitor-modal').classList.remove('hidden')"
+              class="px-3 py-1.5 bg-indigo-600 text-white text-xs rounded-lg hover:bg-indigo-700 transition">
+        + 競合商品を追加
+      </button>
+    </div>
+
+    <div id="competitor-list"
+         hx-get="/ui/products/competitors"
+         hx-trigger="load"
+         hx-swap="innerHTML">
+      <div class="text-sm text-gray-400 text-center py-6">読み込み中…</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     自社商品追加モーダル
+════════════════════════════════════════════════════════════════ -->
+<div id="add-product-modal"
+     class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-lg p-6 space-y-4">
+    <div class="flex items-center justify-between">
+      <h2 class="text-lg font-bold text-gray-800">自社商品を追加</h2>
+      <button onclick="document.getElementById('add-product-modal').classList.add('hidden')"
+              class="text-gray-400 hover:text-gray-600 text-xl font-bold">×</button>
+    </div>
+
+    <form hx-post="/api/v1/products"
+          hx-target="#product-list"
+          hx-swap="innerHTML"
+          hx-on="htmx:afterRequest: if(event.detail.successful) document.getElementById('add-product-modal').classList.add('hidden')"
+          class="space-y-3">
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">SKU <span class="text-red-500">*</span></label>
+          <input name="sku" required placeholder="SKU-001"
+                 class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">Yahoo! 商品コード</label>
+          <input name="yahoo_item_code" placeholder="任意"
+                 class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none" />
+        </div>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">商品名 <span class="text-red-500">*</span></label>
+        <input name="name" required placeholder="例: Nintendo Switch 本体"
+               class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none" />
+      </div>
+
+      <div class="grid grid-cols-3 gap-3">
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">原価 (¥) <span class="text-red-500">*</span></label>
+          <input name="cost" type="number" min="0" required placeholder="3000"
+                 class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">最低マージン (¥)</label>
+          <input name="min_margin_amount" type="number" min="0" value="0" placeholder="500"
+                 class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none" />
+        </div>
+        <div>
+          <label class="block text-xs font-medium text-gray-600 mb-1">マージン率 (%)</label>
+          <input name="min_margin_rate" type="number" min="0" max="100" step="0.1" placeholder="15"
+                 class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none" />
+        </div>
+      </div>
+
+      <div class="flex gap-3 pt-2">
+        <button type="submit"
+                class="flex-1 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition">
+          保存
+        </button>
+        <button type="button"
+                onclick="document.getElementById('add-product-modal').classList.add('hidden')"
+                class="flex-1 py-2 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50 transition">
+          キャンセル
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     競合商品追加モーダル
+════════════════════════════════════════════════════════════════ -->
+<div id="add-competitor-modal"
+     class="hidden fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
+  <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-4">
+    <div class="flex items-center justify-between">
+      <h2 class="text-lg font-bold text-gray-800">競合商品を追加</h2>
+      <button onclick="document.getElementById('add-competitor-modal').classList.add('hidden')"
+              class="text-gray-400 hover:text-gray-600 text-xl font-bold">×</button>
+    </div>
+
+    <form hx-post="/api/v1/competitors"
+          hx-target="#competitor-list"
+          hx-swap="innerHTML"
+          hx-on="htmx:afterRequest: if(event.detail.successful) document.getElementById('add-competitor-modal').classList.add('hidden')"
+          class="space-y-3">
+
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">Yahoo! 商品コード <span class="text-red-500">*</span></label>
+        <input name="yahoo_item_code" required placeholder="例: shopname:12345"
+               class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none" />
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">商品名</label>
+        <input name="item_name" placeholder="任意"
+               class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none" />
+      </div>
+      <div>
+        <label class="block text-xs font-medium text-gray-600 mb-1">ショップコード</label>
+        <input name="shop_code" placeholder="任意"
+               class="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-400 focus:outline-none" />
+      </div>
+
+      <div class="flex gap-3 pt-2">
+        <button type="submit"
+                class="flex-1 py-2 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition">
+          保存
+        </button>
+        <button type="button"
+                onclick="document.getElementById('add-competitor-modal').classList.add('hidden')"
+                class="flex-1 py-2 border border-gray-300 text-gray-600 text-sm rounded-lg hover:bg-gray-50 transition">
+          キャンセル
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function switchTab(tab) {
+    const myDiv = document.getElementById('tab-my-products');
+    const compDiv = document.getElementById('tab-competitors');
+    const myBtn = document.getElementById('tab-my');
+    const compBtn = document.getElementById('tab-comp');
+
+    if (tab === 'my-products') {
+      myDiv.classList.remove('hidden');
+      compDiv.classList.add('hidden');
+      myBtn.classList.add('border-blue-600', 'text-blue-600');
+      myBtn.classList.remove('text-gray-500', 'border-transparent');
+      compBtn.classList.add('text-gray-500', 'border-transparent');
+      compBtn.classList.remove('border-blue-600', 'text-blue-600');
+    } else {
+      compDiv.classList.remove('hidden');
+      myDiv.classList.add('hidden');
+      compBtn.classList.add('border-blue-600', 'text-blue-600');
+      compBtn.classList.remove('text-gray-500', 'border-transparent');
+      myBtn.classList.add('text-gray-500', 'border-transparent');
+      myBtn.classList.remove('border-blue-600', 'text-blue-600');
+    }
+  }
+</script>
+{% endblock %}

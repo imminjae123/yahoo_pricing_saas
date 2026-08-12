@@ -170,15 +170,32 @@ async def login(
 ) -> dict[str, Any]:
     """
     Verify email + password, return tokens.
+    Scans all active rows for the email to handle hash-migration scenarios
+    where older rows may have a different hash format (passlib → bcrypt).
     Raises ValueError on bad credentials.
     """
-    user: User | None = await db.scalar(
-        select(User).where(User.email == email, User.is_active.is_(True)).limit(1)
+    # Fetch all active users with this email (multiple rows can exist during
+    # hash migration; we verify against each until one matches).
+    users: list[User] = list(
+        (
+            await db.scalars(
+                select(User)
+                .where(User.email == email, User.is_active.is_(True))
+                .order_by(User.created_at.desc())   # newest first → prefer latest hash
+            )
+        ).all()
     )
-    if user is None or not verify_password(password, user.hashed_password):
+
+    matched: User | None = None
+    for u in users:
+        if verify_password(password, u.hashed_password):
+            matched = u
+            break
+
+    if matched is None:
         raise ValueError("Invalid email or password")
 
-    tokens = create_tokens(user.id, user.tenant_id, user.role)
+    tokens = create_tokens(matched.id, matched.tenant_id, matched.role)
     return {
         **tokens,
         "expires_in": int(ACCESS_TOKEN_TTL.total_seconds()),

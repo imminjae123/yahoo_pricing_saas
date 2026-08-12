@@ -14,7 +14,7 @@ from __future__ import annotations
 import uuid
 
 import jwt
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.schemas.auth import (
@@ -42,6 +42,7 @@ router = APIRouter()
 )
 async def register(
     body: TenantRegisterRequest,
+    response: Response,
     db: AsyncSession = Depends(get_db),
 ) -> TenantRegisterResponse:
     try:
@@ -58,6 +59,14 @@ async def register(
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc))
 
+    response.set_cookie(
+        key="access_token",
+        value=result["access_token"],
+        max_age=int(auth_service.ACCESS_TOKEN_TTL.total_seconds()),
+        httponly=True,
+        samesite="lax",
+        secure=False,
+    )
     return TenantRegisterResponse(**result)
 
 
@@ -70,6 +79,7 @@ async def register(
 )
 async def login(
     body: LoginRequest,
+    response: Response,
     db: AsyncSession = Depends(get_db),
 ) -> TokenResponse:
     try:
@@ -85,6 +95,15 @@ async def login(
             headers={"WWW-Authenticate": "Bearer"},
         )
 
+    # Set httpOnly cookie so browser UI routes can authenticate automatically.
+    response.set_cookie(
+        key="access_token",
+        value=result["access_token"],
+        max_age=result["expires_in"],
+        httponly=True,
+        samesite="lax",
+        secure=False,   # True in production (HTTPS)
+    )
     return TokenResponse(**result)
 
 

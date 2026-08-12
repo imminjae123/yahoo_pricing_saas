@@ -1,0 +1,44 @@
+{% if competitors %}
+<div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+  <table class="min-w-full text-sm">
+    <thead class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
+      <tr>
+        <th class="px-4 py-3 text-left">Yahoo! 商品コード</th>
+        <th class="px-4 py-3 text-left">商品名</th>
+        <th class="px-4 py-3 text-left">ショップ</th>
+        <th class="px-4 py-3 text-right">最新価格</th>
+        <th class="px-4 py-3 text-right">過去最安値</th>
+        <th class="px-4 py-3 text-center">状態</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for c in competitors %}
+      <tr class="hover:bg-gray-50 transition">
+        <td class="px-4 py-3 font-mono text-xs text-blue-600">{{ c.yahoo_item_code }}</td>
+        <td class="px-4 py-3 text-gray-700 max-w-xs truncate">{{ c.item_name or '—' }}</td>
+        <td class="px-4 py-3 text-gray-500 text-xs">{{ c.shop_name or c.shop_code or '—' }}</td>
+        <td class="px-4 py-3 text-right font-semibold">
+          {% if c.latest_price %}¥{{ "{:,}".format(c.latest_price) }}{% else %}<span class="text-gray-300">未取得</span>{% endif %}
+        </td>
+        <td class="px-4 py-3 text-right text-red-500 font-semibold">
+          {% if c.all_time_low_price %}¥{{ "{:,}".format(c.all_time_low_price) }}{% else %}<span class="text-gray-300">—</span>{% endif %}
+        </td>
+        <td class="px-4 py-3 text-center">
+          {% if c.is_active %}
+          <span class="px-2 py-0.5 rounded-full text-xs bg-green-100 text-green-700 font-semibold">監視中</span>
+          {% else %}
+          <span class="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-400 font-semibold">停止</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="text-center py-12 text-gray-400">
+  <p class="text-4xl mb-3">🔍</p>
+  <p class="text-sm">競合商品がまだ登録されていません</p>
+  <p class="text-xs mt-1">「競合商品を追加」ボタンからYahoo! 商品コードを登録してください</p>
+</div>
+{% endif %}

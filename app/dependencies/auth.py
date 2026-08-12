@@ -23,14 +23,14 @@ from dataclasses import dataclass
 from typing import Callable
 
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Cookie, Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.config import settings
 from app.models.user import UserRole
 
 _ALGORITHM = "HS256"
-_bearer = HTTPBearer(auto_error=True)
+_bearer = HTTPBearer(auto_error=False)   # auto_error=False → Cookie fallback 可
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,9 +64,28 @@ def _decode_token(token: str) -> dict:
 
 
 async def get_current_user(
-    credentials: HTTPAuthorizationCredentials = Depends(_bearer),
+    credentials: HTTPAuthorizationCredentials | None = Depends(_bearer),
+    access_token: str | None = Cookie(default=None),
 ) -> CurrentUser:
-    payload = _decode_token(credentials.credentials)
+    """
+    Resolve JWT from:
+    1. Authorization: Bearer <token>  header  (API clients / Swagger)
+    2. access_token httpOnly cookie            (browser UI)
+    """
+    token: str | None = None
+    if credentials is not None:
+        token = credentials.credentials
+    elif access_token:
+        token = access_token
+
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    payload = _decode_token(token)
     try:
         return CurrentUser(
             user_id=uuid.UUID(payload["sub"]),

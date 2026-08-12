@@ -1,0 +1,78 @@
+<div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
+
+  <!-- 自社商品数 -->
+  <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+    <p class="text-xs text-gray-500 font-medium mb-1">自社商品数</p>
+    <p class="text-3xl font-bold text-blue-600">{{ summary.total_my_products }}</p>
+    <p class="text-xs text-gray-400 mt-1">アクティブ</p>
+  </div>
+
+  <!-- 競合商品マッピング -->
+  <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+    <p class="text-xs text-gray-500 font-medium mb-1">競合マッピング数</p>
+    <p class="text-3xl font-bold text-indigo-600">{{ summary.total_mappings }}</p>
+    <p class="text-xs text-gray-400 mt-1">競合{{ summary.total_competitor_products }}商品</p>
+  </div>
+
+  <!-- 24h クロール数 -->
+  <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+    <p class="text-xs text-gray-500 font-medium mb-1">クロール（24h）</p>
+    <p class="text-3xl font-bold text-teal-600">{{ summary.crawls_last_24h }}</p>
+    <p class="text-xs text-gray-400 mt-1">価格取得件数</p>
+  </div>
+
+  <!-- 最安値更新 -->
+  <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5">
+    <p class="text-xs text-gray-500 font-medium mb-1">過去最安値更新（24h）</p>
+    <p class="text-3xl font-bold {% if summary.all_time_lows_last_24h > 0 %}text-red-500{% else %}text-gray-400{% endif %}">
+      {{ summary.all_time_lows_last_24h }}
+    </p>
+    <p class="text-xs text-gray-400 mt-1">LINE通知送信済み</p>
+  </div>
+
+</div>
+
+<!-- 商品別ミニ統計テーブル -->
+{% if summary.products %}
+<div class="mt-4 bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+  <table class="min-w-full text-sm">
+    <thead class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
+      <tr>
+        <th class="px-4 py-3 text-left">SKU / 商品名</th>
+        <th class="px-4 py-3 text-right">現在価格</th>
+        <th class="px-4 py-3 text-right">競合数</th>
+        <th class="px-4 py-3 text-right">最安値更新（24h）</th>
+        <th class="px-4 py-3 text-right">最終クロール</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for p in summary.products %}
+      <tr class="hover:bg-gray-50 transition">
+        <td class="px-4 py-3">
+          <span class="font-mono text-xs text-gray-500">{{ p.sku }}</span>
+          <span class="ml-2 text-gray-700">{{ p.name }}</span>
+        </td>
+        <td class="px-4 py-3 text-right font-semibold">
+          {% if p.current_price %}¥{{ "{:,.0f}".format(p.current_price) }}{% else %}<span class="text-gray-300">—</span>{% endif %}
+        </td>
+        <td class="px-4 py-3 text-right text-gray-600">{{ p.competitor_count }}</td>
+        <td class="px-4 py-3 text-right">
+          {% if p.all_time_low_count > 0 %}
+            <span class="text-red-500 font-bold">{{ p.all_time_low_count }}</span>
+          {% else %}
+            <span class="text-gray-300">0</span>
+          {% endif %}
+        </td>
+        <td class="px-4 py-3 text-right text-xs text-gray-400">
+          {% if p.last_crawled_at %}
+            {{ p.last_crawled_at.strftime('%m/%d %H:%M') }}
+          {% else %}
+            <span class="text-gray-300">未クロール</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}

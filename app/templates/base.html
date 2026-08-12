@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}Yahoo! Pricing SaaS{% endblock %}</title>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- HTMX -->
+  <script src="https://unpkg.com/htmx.org@1.9.12" crossorigin="anonymous"></script>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+  <!-- Lucide Icons (SVG icon set) -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+
+  <style>
+    [x-cloak] { display: none !important; }
+    .htmx-indicator { display: none; }
+    .htmx-request .htmx-indicator { display: inline-block; }
+    .htmx-request.htmx-indicator { display: inline-block; }
+  </style>
+
+  {% block head_extra %}{% endblock %}
+</head>
+<body class="bg-gray-50 text-gray-800 min-h-screen">
+
+  <!-- ── ナビゲーション ─────────────────────────────────────────── -->
+  <nav class="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between shadow-sm">
+    <div class="flex items-center gap-6">
+      <a href="/ui/dashboard" class="font-bold text-blue-600 text-lg tracking-tight">
+        📊 Yahoo! Pricing
+      </a>
+      <div class="flex gap-1 text-sm">
+        <a href="/ui/dashboard"
+           class="px-3 py-1.5 rounded-md hover:bg-blue-50 hover:text-blue-700 transition
+                  {% if active_page == 'dashboard' %}bg-blue-100 text-blue-700 font-semibold{% else %}text-gray-600{% endif %}">
+          ダッシュボード
+        </a>
+        <a href="/ui/products"
+           class="px-3 py-1.5 rounded-md hover:bg-blue-50 hover:text-blue-700 transition
+                  {% if active_page == 'products' %}bg-blue-100 text-blue-700 font-semibold{% else %}text-gray-600{% endif %}">
+          商品管理
+        </a>
+        <a href="/ui/rules"
+           class="px-3 py-1.5 rounded-md hover:bg-blue-50 hover:text-blue-700 transition
+                  {% if active_page == 'rules' %}bg-blue-100 text-blue-700 font-semibold{% else %}text-gray-600{% endif %}">
+          ルール設定
+        </a>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3 text-sm">
+      {% if user %}
+        <span class="text-gray-500">{{ user.email }}</span>
+        <span class="px-2 py-0.5 rounded-full text-xs font-semibold
+          {% if user.role == 'OWNER' %}bg-purple-100 text-purple-700
+          {% elif user.role == 'MANAGER' %}bg-blue-100 text-blue-700
+          {% else %}bg-gray-100 text-gray-600{% endif %}">
+          {{ user.role }}
+        </span>
+        <a href="/ui/logout" class="text-gray-400 hover:text-red-500 transition">ログアウト</a>
+      {% else %}
+        <a href="/ui/login" class="text-blue-600 hover:underline">ログイン</a>
+      {% endif %}
+    </div>
+  </nav>
+
+  <!-- ── フラッシュメッセージ ────────────────────────────────────── -->
+  {% if flash_message %}
+  <div id="flash"
+       class="mx-6 mt-4 px-4 py-3 rounded-lg text-sm font-medium
+              {% if flash_type == 'error' %}bg-red-50 text-red-700 border border-red-200
+              {% else %}bg-green-50 text-green-700 border border-green-200{% endif %}">
+    {{ flash_message }}
+    <button onclick="document.getElementById('flash').remove()"
+            class="float-right font-bold opacity-50 hover:opacity-100 ml-4">×</button>
+  </div>
+  {% endif %}
+
+  <!-- ── メインコンテンツ ────────────────────────────────────────── -->
+  <main class="px-6 py-6 max-w-7xl mx-auto">
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- ── フッター ───────────────────────────────────────────────── -->
+  <footer class="text-center text-xs text-gray-400 py-6 border-t border-gray-200 mt-12">
+    Yahoo! Pricing SaaS &mdash; Powered by FastAPI + HTMX
+  </footer>
+
+  <script>
+    // Lucide アイコン初期化
+    if (window.lucide) lucide.createIcons();
+
+    // HTMX グローバルエラーハンドリング
+    document.body.addEventListener('htmx:responseError', function(evt) {
+      console.error('HTMX error:', evt.detail);
+      const msg = document.createElement('div');
+      msg.className = 'fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded shadow-lg text-sm z-50';
+      msg.textContent = 'エラーが発生しました。再試行してください。';
+      document.body.appendChild(msg);
+      setTimeout(() => msg.remove(), 4000);
+    });
+  </script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

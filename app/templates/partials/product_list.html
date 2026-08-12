@@ -1,0 +1,65 @@
+{% if products %}
+<div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+  <table class="min-w-full text-sm">
+    <thead class="bg-gray-50 text-gray-500 text-xs uppercase tracking-wide">
+      <tr>
+        <th class="px-4 py-3 text-left">SKU / 商品名</th>
+        <th class="px-4 py-3 text-right">原価</th>
+        <th class="px-4 py-3 text-right">現在価格</th>
+        <th class="px-4 py-3 text-right">防衛価格下限</th>
+        <th class="px-4 py-3 text-center">状態</th>
+        <th class="px-4 py-3 text-center">操作</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100">
+      {% for p in products %}
+      <tr class="hover:bg-gray-50 transition" id="product-row-{{ p.id }}">
+        <td class="px-4 py-3">
+          <span class="font-mono text-xs text-gray-400">{{ p.sku }}</span>
+          <p class="font-medium text-gray-800">{{ p.name }}</p>
+          {% if p.yahoo_item_code %}
+          <p class="text-xs text-gray-400">Yahoo!コード: {{ p.yahoo_item_code }}</p>
+          {% endif %}
+        </td>
+        {% if p.cost is defined %}
+        <td class="px-4 py-3 text-right text-gray-700">¥{{ "{:,.0f}".format(p.cost) }}</td>
+        {% else %}
+        <td class="px-4 py-3 text-right text-gray-300">—</td>
+        {% endif %}
+        <td class="px-4 py-3 text-right font-semibold text-blue-700">
+          {% if p.current_price %}¥{{ "{:,.0f}".format(p.current_price) }}{% else %}<span class="text-gray-300">未設定</span>{% endif %}
+        </td>
+        {% if p.defensive_price is defined %}
+        <td class="px-4 py-3 text-right text-gray-500">¥{{ "{:,.0f}".format(p.defensive_price) }}</td>
+        {% else %}
+        <td class="px-4 py-3 text-right text-gray-300">—</td>
+        {% endif %}
+        <td class="px-4 py-3 text-center">
+          {% if p.is_active %}
+          <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">有効</span>
+          {% else %}
+          <span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-400">無効</span>
+          {% endif %}
+        </td>
+        <td class="px-4 py-3 text-center">
+          <button
+            hx-delete="/api/v1/products/{{ p.id }}"
+            hx-target="#product-row-{{ p.id }}"
+            hx-swap="outerHTML swap:0.3s"
+            hx-confirm="この商品を無効化しますか？"
+            class="text-xs text-red-400 hover:text-red-600 transition">
+            削除
+          </button>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="text-center py-12 text-gray-400">
+  <p class="text-4xl mb-3">📦</p>
+  <p class="text-sm">自社商品がまだ登録されていません</p>
+  <p class="text-xs mt-1">「自社商品を追加」ボタンから登録してください</p>
+</div>
+{% endif %}

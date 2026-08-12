@@ -1,0 +1,21 @@
+{% if events %}
+<ul class="space-y-2">
+  {% for e in events %}
+  <li class="flex items-start gap-3 text-sm p-3 bg-red-50 border border-red-100 rounded-lg">
+    <span class="text-red-500 text-base mt-0.5">🔔</span>
+    <div class="flex-1 min-w-0">
+      <p class="font-semibold text-red-700 truncate">{{ e.details.get('item_name') or e.details.get('yahoo_item_code', '不明') }}</p>
+      <p class="text-xs text-gray-500 mt-0.5">
+        新最安値: <span class="font-bold text-red-600">¥{{ "{:,}".format(e.details.get('price', 0)) }}</span>
+        {% if e.details.get('previous_low') %}
+          &nbsp;（前回: ¥{{ "{:,}".format(e.details.get('previous_low')) }}）
+        {% endif %}
+        &nbsp;·&nbsp;{{ e.occurred_at.strftime('%m/%d %H:%M') }}
+      </p>
+    </div>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="text-center text-sm text-gray-400 py-6">直近24時間の最安値更新はありません</p>
+{% endif %}
