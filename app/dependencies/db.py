@@ -71,7 +71,7 @@ async def _get_tenant_db(
     Use this dependency on every endpoint that touches tenant-scoped tables.
     """
     await session.execute(
-        sa.text("SET LOCAL app.current_tenant_id = :tid"),
+        sa.text("SELECT set_config('app.current_tenant_id', :tid, true)"),
         {"tid": str(current_user.tenant_id)},
     )
     yield session

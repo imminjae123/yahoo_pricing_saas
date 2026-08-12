@@ -27,6 +27,11 @@ DB-level guarantee rather than an application convention.
 
 from alembic import op
 
+revision: str = "0002"
+down_revision = "0001"
+branch_labels = None
+depends_on = None
+
 
 # ── Tenant-scoped tables that need RLS ────────────────────────────────────────
 TENANT_SCOPED_TABLES = [

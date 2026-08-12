@@ -33,6 +33,8 @@ class TenantRegisterRequest(BaseModel):
 
     # First OWNER account
     email: EmailStr
+    # SHA-256 pre-hash in auth_service bypasses bcrypt's 72-byte limit.
+    # Accept up to 128 characters freely.
     password: str = Field(..., min_length=8, max_length=128)
     full_name: str | None = Field(None, max_length=255)
 
