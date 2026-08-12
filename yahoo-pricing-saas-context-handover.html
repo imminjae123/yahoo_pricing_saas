@@ -1,0 +1,336 @@
+
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Yahoo! Pricing SaaS — Context Handover</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+    font-size: 14px; line-height: 1.65; color: #1f2328;
+    background: #fff; padding: 32px 16px 56px;
+  }
+  .page { max-width: 760px; margin: 0 auto; }
+  h1 { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+  .subtitle { color: #57606a; font-size: 12.5px; margin-bottom: 28px; }
+  h2 {
+    font-size: 14px; font-weight: 700;
+    border-left: 4px solid #3b82d4; padding-left: 10px;
+    margin: 32px 0 12px;
+  }
+  h3 { font-size: 13px; font-weight: 700; margin: 18px 0 6px; color: #3b82d4; }
+  p { margin-bottom: 8px; }
+  code {
+    font-family: "SFMono-Regular", Consolas, monospace; font-size: 12px;
+    background: #f7f8fa; border: 1px solid #e5e7eb; border-radius: 3px;
+    padding: 1px 5px;
+  }
+  pre {
+    background: #f7f8fa; border: 1px solid #e5e7eb; border-radius: 6px;
+    padding: 12px 14px; overflow-x: auto;
+    font-family: "SFMono-Regular", Consolas, monospace;
+    font-size: 12px; line-height: 1.7; margin: 8px 0 14px;
+  }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0 16px; font-size: 12.5px; }
+  th { background: #f7f8fa; border: 1px solid #e5e7eb; padding: 6px 10px; text-align: left; font-weight: 600; }
+  td { border: 1px solid #e5e7eb; padding: 5px 10px; vertical-align: top; }
+  tr:nth-child(even) td { background: #fafbfc; }
+  .badge {
+    display: inline-block; font-size: 10.5px; padding: 1px 7px;
+    border-radius: 10px; font-weight: 600; margin: 1px 2px;
+  }
+  .done  { background: #dcfce7; color: #166534; }
+  .todo  { background: #dbeafe; color: #1d4ed8; }
+  .warn  { background: #fef3c7; color: #92400e; }
+  .crit  { background: #fee2e2; color: #991b1b; }
+  .callout {
+    border: 1px solid #e5e7eb; border-left: 4px solid #3b82d4;
+    background: #f7f8fa; border-radius: 4px;
+    padding: 10px 14px; margin: 10px 0; font-size: 13px;
+  }
+  .callout.green { border-left-color: #22c55e; }
+  .callout.warn  { border-left-color: #f59e0b; }
+  .callout.red   { border-left-color: #ef4444; }
+  .step-list { list-style: none; padding: 0; margin: 0; }
+  .step-list li {
+    display: flex; gap: 10px; align-items: flex-start;
+    padding: 8px 0; border-bottom: 1px solid #e5e7eb;
+    font-size: 13px;
+  }
+  .step-list li:last-child { border-bottom: none; }
+  .num {
+    min-width: 22px; height: 22px; border-radius: 50%;
+    background: #3b82d4; color: #fff; font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .num.gray { background: #d1d5db; color: #6b7280; }
+  hr { border: none; border-top: 1px solid #e5e7eb; margin: 28px 0; }
+  ul, ol { padding-left: 18px; margin-bottom: 8px; }
+  li { margin-bottom: 3px; }
+  footer { margin-top: 48px; padding-top: 14px; border-top: 1px solid #e5e7eb; text-align: center; font-size: 12px; color: #57606a; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1>Yahoo! Pricing SaaS — Context Handover</h1>
+<p class="subtitle">새 채팅에 그대로 붙여넣기용 핵심 컨텍스트 · 2025-08</p>
+
+<div class="callout green">
+  <strong>지금 당장 복붙할 수 있는 한 줄 요약:</strong><br />
+  "일본 Yahoo! ショッピング 경쟁가 모니터링 + 자동 가격 책정 B2B SaaS (FastAPI + PostgreSQL + Redis). Python 3.14 / 가상환경 <code>.venv</code> 세팅 완료. Yahoo! API 연결 테스트까지 완료. 다음 작업은 FastAPI 앱 뼈대 + Alembic DB 마이그레이션."
+</div>
+
+<h2>1. 프로젝트 개요 &amp; 기술 스택</h2>
+
+<table>
+  <tr><th>항목</th><th>내용</th></tr>
+  <tr><td>목적</td><td>Yahoo! ショッピング 셀러가 경쟁사 가격을 자동 모니터링 → 룰 기반 최적가 산출 → LINE 알림</td></tr>
+  <tr><td>형태</td><td>B2B SaaS (멀티테넌트 — 셀러 1개 = 테넌트 1개)</td></tr>
+  <tr><td>언어/FW</td><td>Python 3.14 + FastAPI (async)</td></tr>
+  <tr><td>ORM</td><td>SQLAlchemy 2.0 async + asyncpg</td></tr>
+  <tr><td>DB</td><td>PostgreSQL 16 (Docker Compose 설정 완료) · RLS + JSONB</td></tr>
+  <tr><td>Cache/Queue</td><td>Redis 7 (Docker Compose 설정 완료)</td></tr>
+  <tr><td>외부 API</td><td>Yahoo! Japan Shopping API v3 itemSearch</td></tr>
+  <tr><td>통지</td><td>LINE Messaging API (과거 최저가 갱신, 추천가 산출 시)</td></tr>
+  <tr><td>인증</td><td>JWT Bearer (HS256) + httpOnly Cookie (UI용)</td></tr>
+  <tr><td>Frontend</td><td>FastAPI + Jinja2 + HTMX + Tailwind CSS CDN + Chart.js CDN</td></tr>
+  <tr><td>배포</td><td>Render.com / Fly.io / Railway Free Tier</td></tr>
+</table>
+
+<h2>2. 폴더 구조 (현재 존재하는 파일)</h2>
+
+<pre>yahoo_pricing_saas/               ← 폴더명은 사용자가 직접 변경 예정
+├── .env                          ← YAHOO_CLIENT_ID 실제값 설정 완료 (API 테스트 성공)
+├── .env.example
+├── requirements.txt              ← 전체 의존성 정의
+├── docker-compose.yml            ← postgres:16 + redis:7 + api 컨테이너
+├── test_yahoo_api.py             ← API 연결 테스트 스크립트 (동작 확인 완료)
+├── app/
+│   ├── config.py                 ← pydantic-settings 기반 Settings (YAHOO_CLIENT_ID 포함)
+│   ├── services/
+│   │   └── yahoo.py              ← YahooShoppingClient (async context manager) 완성
+│   ├── domain/
+│   │   ├── rule_engine.py        ← evaluate_rule() 순수 함수 완성
+│   │   └── price_floor.py        ← compute_defensive_price() 완성
+│   ├── models/                   ← SQLAlchemy ORM 모델 전체 완성
+│   │   ├── base.py               (Base, TimestampMixin)
+│   │   ├── tenant.py             (shop_url 컬럼 — rakuten 흔적 없음)
+│   │   ├── user.py
+│   │   ├── product.py            (yahoo_item_code 컬럼)
+│   │   ├── mapping.py
+│   │   ├── rule.py               (JSONB condition + GIN INDEX)
+│   │   ├── price_history.py      (Append-Only)
+│   │   ├── audit_log.py          (Append-Only)
+│   │   └── __init__.py
+│   └── api/
+│       └── schemas/              ← Pydantic v2 스키마 완성
+│           ├── auth.py           (shop_url 필드 — rakuten 흔적 없음)
+│           ├── product.py        (yahoo_item_code 필드)
+│           ├── history.py
+│           └── rule.py
+└── alembic/
+    └── versions/
+        └── 0002_enable_rls_and_append_only_triggers.py</pre>
+
+<h2>3. 구현 완료 목록</h2>
+
+<table>
+  <tr><th>파일</th><th>내용</th><th>상태</th></tr>
+  <tr>
+    <td><code>app/services/yahoo.py</code></td>
+    <td>YahooShoppingClient (async ctx), YahooItemHit / YahooSearchResponse Pydantic 스키마, search_yahoo_items() 헬퍼</td>
+    <td><span class="badge done">완료</span></td>
+  </tr>
+  <tr>
+    <td><code>app/config.py</code></td>
+    <td>pydantic-settings Settings (YAHOO_CLIENT_ID, DATABASE_URL, REDIS_URL, SECRET_KEY 등), lru_cache 싱글톤</td>
+    <td><span class="badge done">완료</span></td>
+  </tr>
+  <tr>
+    <td><code>app/domain/rule_engine.py</code></td>
+    <td>evaluate_rule() 순수함수 — BEAT_LOWEST / MATCH_LOWEST / FIXED_PRICE / PERCENTAGE_MARKUP 4종 지원, floor·ceiling 적용, RuleResult 반환</td>
+    <td><span class="badge done">완료</span></td>
+  </tr>
+  <tr>
+    <td><code>app/domain/price_floor.py</code></td>
+    <td>compute_defensive_price(cost, min_margin_amount, min_margin_rate) → int</td>
+    <td><span class="badge done">완료</span></td>
+  </tr>
+  <tr>
+    <td><code>app/models/*</code></td>
+    <td>Tenants / Users / MyProducts / CompetitorProducts / ProductMappings / PricingRules / PriceHistories / AuditLogs — 전부 SQLAlchemy 2.0 async ORM</td>
+    <td><span class="badge done">완료</span></td>
+  </tr>
+  <tr>
+    <td><code>app/api/schemas/*</code></td>
+    <td>Auth / Product / History / Rule Pydantic v2 request·response 스키마</td>
+    <td><span class="badge done">완료</span></td>
+  </tr>
+  <tr>
+    <td><code>alembic/0002_...</code></td>
+    <td>PostgreSQL RLS 정책 + Append-Only 트리거 (price_histories, audit_logs)</td>
+    <td><span class="badge done">완료</span></td>
+  </tr>
+  <tr>
+    <td><code>docker-compose.yml</code></td>
+    <td>postgres:16 + redis:7 + api 컨테이너, healthcheck 포함</td>
+    <td><span class="badge done">완료</span></td>
+  </tr>
+  <tr>
+    <td>Yahoo! API 연결 테스트</td>
+    <td>test_yahoo_api.py 실행 → 180,494건 히트 확인</td>
+    <td><span class="badge done">완료</span></td>
+  </tr>
+</table>
+
+<h2>4. 핵심 아키텍처 결정 사항 (반드시 지켜야 할 룰)</h2>
+
+<div class="callout red">
+  <strong>절대 위반 금지</strong>
+  <ul style="margin-top:6px">
+    <li>모든 DB 쿼리는 <code>SET LOCAL app.current_tenant_id = '&lt;uuid&gt;'</code> 적용 후 실행 — RLS가 1차 방어선</li>
+    <li><code>Price_Histories</code>, <code>Audit_Logs</code>는 INSERT ONLY — UPDATE/DELETE 불가 (DB 트리거로 강제)</li>
+    <li><code>cost</code>, <code>min_margin_*</code>, <code>defensive_price</code>는 VIEWER 역할 응답에서 완전 제외</li>
+    <li><code>Pricing_Rules.condition</code>은 반드시 JSONB로 저장 — 컬럼 평탄화 금지</li>
+    <li>LINE 알림은 트랜잭션 커밋 후 Redis 큐를 통해 비동기 발송 — 라우터 내 직접 await 금지</li>
+    <li>DATABASE_URL은 반드시 <code>postgresql+asyncpg://</code> — psycopg2 사용 불가</li>
+  </ul>
+</div>
+
+<h3>DB 핵심 컬럼명 (이전 Rakuten 명칭에서 변경됨)</h3>
+<table>
+  <tr><th>테이블</th><th>컬럼</th><th>설명</th></tr>
+  <tr><td>competitor_products</td><td><code>yahoo_item_code</code></td><td>Yahoo! 상품 식별자 (UNIQUE) — polling 키</td></tr>
+  <tr><td>my_products</td><td><code>yahoo_item_code</code></td><td>자사 상품 Yahoo! 코드 (nullable)</td></tr>
+  <tr><td>tenants</td><td><code>shop_url</code></td><td>쇼핑몰 URL (플랫폼 중립 명칭)</td></tr>
+</table>
+
+<h3>룰 엔진 평가 순서 (evaluate_rule)</h3>
+<pre>Step 1: reference_price 결정 — ALL_MAPPED → min(prices), PRIMARY_ONLY → prices[0]
+Step 2: raw_price 계산 — rule type + adjustment 적용
+Step 3: defensive_floor = cost + min_margin (rule 개별 &gt; 상품 레벨 우선순위)
+Step 4: recommended = max(raw_price, defensive_floor)  ← floor 적용
+Step 5: if price_ceiling: recommended = min(recommended, ceiling)  ← ceiling 적용</pre>
+
+<h3>Redis 역할 분리 (DB index 충돌 방지)</h3>
+<table>
+  <tr><td>DB 0</td><td>Yahoo! API rate-limit Token Bucket</td></tr>
+  <tr><td>DB 1</td><td>Celery/RQ 브로커 — LINE 알림 태스크</td></tr>
+  <tr><td>DB 2</td><td>테넌트 정책 메타데이터 캐시</td></tr>
+</table>
+
+<h2>5. 환경 변수 (.env)</h2>
+<pre>APP_ENV=development
+PORT=8000
+DATABASE_URL=postgresql+asyncpg://user:password@localhost:5432/yahoo_pricing_db
+REDIS_URL=redis://localhost:6379/0
+YAHOO_CLIENT_ID=&lt;실제값 설정 완료&gt;
+LINE_CHANNEL_ACCESS_TOKEN=&lt;미설정&gt;
+SECRET_KEY=&lt;미설정 — JWT 사용 전 반드시 설정&gt;</pre>
+
+<h2>6. 앞으로 해야 할 작업 (우선순위 순)</h2>
+
+<ul class="step-list">
+  <li>
+    <div class="num">1</div>
+    <div>
+      <strong>FastAPI 앱 뼈대 생성</strong> — <code>app/main.py</code> (lifespan, middleware, router include), <code>app/dependencies/auth.py</code> (JWT decode → CurrentUser), <code>app/dependencies/db.py</code> (async_session + SET LOCAL RLS)
+      <span class="badge todo">다음 작업</span>
+    </div>
+  </li>
+  <li>
+    <div class="num">2</div>
+    <div>
+      <strong>Alembic 초기 마이그레이션</strong> — <code>alembic/versions/0001_initial_tables.py</code> 생성 (전체 테이블 CREATE), 이어서 0002 RLS 마이그레이션 실행
+      <span class="badge todo">다음 작업</span>
+    </div>
+  </li>
+  <li>
+    <div class="num">3</div>
+    <div>
+      <strong>Docker Compose로 DB 기동 및 마이그레이션 적용</strong>
+      <code>docker compose up -d db</code> → <code>alembic upgrade head</code>
+      <span class="badge todo">다음 작업</span>
+    </div>
+  </li>
+  <li>
+    <div class="num">4</div>
+    <div>
+      <strong>Auth API 구현</strong> — POST /auth/register (테넌트 + OWNER 생성), POST /auth/login (JWT 발급), GET /auth/me
+    </div>
+  </li>
+  <li>
+    <div class="num">5</div>
+    <div>
+      <strong>Products / Competitors API 구현</strong> — CRUD + 경쟁상품 매핑 (ProductMapping)
+    </div>
+  </li>
+  <li>
+    <div class="num">6</div>
+    <div>
+      <strong>Rules API + Simulation 엔드포인트 구현</strong> — POST /rules/simulate (stateless, DB 쓰기 없음 — evaluate_rule() 호출만)
+    </div>
+  </li>
+  <li>
+    <div class="num">7</div>
+    <div>
+      <strong>크롤러 서비스 구현</strong> — <code>app/services/crawl_service.py</code>: YahooShoppingClient로 경쟁상품 조회 → PriceHistory INSERT + AuditLog INSERT (동일 트랜잭션) + 최저가 갱신 시 LINE 큐
+    </div>
+  </li>
+  <li>
+    <div class="num">8</div>
+    <div>
+      <strong>Celery Worker + Beat 스케줄러</strong> — 1시간 주기 크롤 태스크 + LINE 알림 발송 태스크
+    </div>
+  </li>
+  <li>
+    <div class="num">9</div>
+    <div>
+      <strong>Jinja2 + HTMX UI</strong> — /ui/dashboard, /ui/products, /ui/rules, Chart.js 가격 추이 그래프
+    </div>
+  </li>
+</ul>
+
+<h2>7. 개발 환경 실행 방법</h2>
+
+<h3>API 테스트 (현재 가능)</h3>
+<pre># PowerShell — 프로젝트 폴더 안에서
+.venv\Scripts\Activate.ps1
+$env:PYTHONUTF8=1   # Windows 콘솔 이모지 인코딩 오류 방지
+python test_yahoo_api.py "Nintendo Switch"</pre>
+
+<h3>DB / Redis 기동 (Docker 필요)</h3>
+<pre>docker compose up -d db redis
+# PostgreSQL: localhost:5432  /  Redis: localhost:6379</pre>
+
+<h3>FastAPI 서버 기동 (app/main.py 생성 후)</h3>
+<pre>uvicorn app.main:app --reload --port 8000</pre>
+
+<h2>8. Yahoo! Shopping API v3 핵심 스펙</h2>
+
+<table>
+  <tr><th>항목</th><th>내용</th></tr>
+  <tr><td>Endpoint</td><td><code>GET https://shopping.yahooapis.jp/ShoppingWebService/V3/itemSearch</code></td></tr>
+  <tr><td>인증</td><td>쿼리 파라미터 <code>appid=YAHOO_CLIENT_ID</code> (OAuth 불필요)</td></tr>
+  <tr><td>주요 파라미터</td><td><code>query</code>, <code>results</code>(1-50), <code>sort</code>(+price/-price/-score)</td></tr>
+  <tr><td>응답 키</td><td><code>hits[].name</code>, <code>hits[].price</code>, <code>hits[].url</code>, <code>hits[].code</code>, <code>hits[].seller.name</code>, <code>hits[].image.medium</code></td></tr>
+  <tr><td>클라이언트</td><td><code>app/services/yahoo.py</code> → <code>YahooShoppingClient</code> (async context manager)</td></tr>
+  <tr><td>공식 문서</td><td>https://developer.yahoo.co.jp/webapi/shopping/shopping/v3/itemsearch.html</td></tr>
+</table>
+
+<h2>9. RBAC 역할 정의</h2>
+
+<table>
+  <tr><th>역할</th><th>권한</th></tr>
+  <tr><td>OWNER</td><td>전체 권한 (결제, 룰 설정, 스태프 추가, 원가 열람)</td></tr>
+  <tr><td>MANAGER</td><td>상품 등록·룰 설정·매핑. 원가 열람 가능</td></tr>
+  <tr><td>VIEWER</td><td>대시보드·가격이력 열람만. <strong>원가·마진 정보 완전 차단</strong></td></tr>
+</table>
+
+<footer>Made with IBM Bob</footer>
+</div>
+</body>
+</html>
